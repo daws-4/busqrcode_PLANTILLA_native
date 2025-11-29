@@ -7,17 +7,26 @@ import useThemedNavigation from './hooks/useThemedNavigation';
 import { useFonts, Lora_400Regular, Lora_700Bold } from '@expo-google-fonts/lora';
 
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 NativeWindStyleSheet.setOutput({
   default: 'native',
 });
 
 function ThemedLayout() {
   const { ThemedStatusBar, screenOptions } = useThemedNavigation();
-  
+  const insets = useSafeAreaInsets();
+
   return (
     <>
       <ThemedStatusBar />
-      <Stack screenOptions={screenOptions} />
+      <Stack screenOptions={{
+        ...screenOptions,
+        contentStyle: {
+          ...screenOptions.contentStyle,
+          paddingBottom: insets.bottom
+        }
+      }} />
 
     </>
   );
@@ -30,9 +39,9 @@ export default function RootLayout() {
   });
   return (
 
-        <ThemeProvider>
-            <ThemedLayout />
-        </ThemeProvider>
+    <ThemeProvider>
+      <ThemedLayout />
+    </ThemeProvider>
 
   );
 }

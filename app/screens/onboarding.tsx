@@ -79,15 +79,15 @@ export default function OnboardingScreen() {
                 </View>
 
                 <View className="w-full px-6 mb-global flex flex-col space-y-2">
-                    <Pressable 
-                    style={{
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 5 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 3.84,
-                        elevation: 5,
-                    }}
-                    className='w-full bg-white dark:bg-black rounded-full flex flex-row items-center justify-center py-4'>
+                    <Pressable
+                        style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 5 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 3.84,
+                            elevation: 5,
+                        }}
+                        className='w-full bg-white dark:bg-black rounded-full flex flex-row items-center justify-center py-4'>
                         <Feather name="mail" size={20} color={colors.icon} />
                         <Text className='text-black dark:text-white ml-3'>Use email</Text>
                     </Pressable>
@@ -97,7 +97,7 @@ export default function OnboardingScreen() {
                             <Text className='ml-3 text-white dark:text-black'>Google login</Text>
                         </Pressable>
                         <Pressable className='flex-1 relative bg-black dark:bg-white rounded-full flex flex-row items-center justify-center py-4'>
-                            <AntDesign name="apple1" size={22} color={colors.invert} />
+                            <AntDesign name="apple" size={22} color={colors.invert} />
                             <Text className='ml-3 text-white dark:text-black'>Apple ID</Text>
                         </Pressable>
                     </View>

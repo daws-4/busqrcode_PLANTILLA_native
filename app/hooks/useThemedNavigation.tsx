@@ -8,14 +8,14 @@ import useThemeColors from '@/app/contexts/ThemeColors';
 export default function useThemedNavigation() {
   const { isDark } = useTheme();
   const colors = useThemeColors();
-  
+
 
   useEffect(() => {
     if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync(colors.bg);
+      // NavigationBar.setBackgroundColorAsync(colors.bg); // Not supported with edge-to-edge
       NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
 
-    } 
+    }
   }, [isDark, colors.bg]);
   const ThemedStatusBar = () => (
     <StatusBar
@@ -28,8 +28,8 @@ export default function useThemedNavigation() {
   const screenOptions = {
     headerShown: false,
     backgroundColor: colors.bg,
-    contentStyle: { 
-      backgroundColor: colors.bg 
+    contentStyle: {
+      backgroundColor: colors.bg
     }
   };
 
