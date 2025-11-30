@@ -20,7 +20,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           header: () => (
-            <View className="bg-white px-4 pt-12 pb-2 flex flex-row justify-between items-center border-b-2 border-stone-600">
+            <View className="bg-white px-4 pt-12 pb-2 flex flex-row justify-between items-center border-b-2 border-stone-600 bg-light-primary">
               <Logo />
               {connection ?
                 <Text className='text-green-500'>conectado</Text> :
@@ -29,14 +29,14 @@ export default function TabsLayout() {
               }
               <Link asChild href="/about">
                 <Pressable>
-                  <CircleInfoIcon />
+                  <CircleInfoIcon color="#acaba8ff"/>
                 </Pressable>
               </Link>
             </View>
           ),
           headerShown: true,
-          tabBarStyle: { backgroundColor: "#000" },
-          tabBarActiveTintColor: "#ffffff",
+          tabBarStyle: { backgroundColor: "#1E303E" },
+          tabBarActiveTintColor: "#49B3A0",
         }}
       >
         <Tabs.Screen

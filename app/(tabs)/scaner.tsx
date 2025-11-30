@@ -1,6 +1,6 @@
 import { Main } from "../../components/busqrcode/Main";
 
-export default function Index() {
+export default function Scaner() {
 
   return <Main />;
 }

@@ -1,8 +1,10 @@
-import { View } from "react-native";
+import { View, ScrollView } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 export function Screen({ children }: { children: React.ReactNode }) {
-  return <View className="flex-1 bg-white pt-4 px-2">
+  return <View className="flex-1 bg-light-primary pt-4 px-2">
+    <ScrollView>
     {children}
-    <StatusBar style='dark' /></View>;
+    </ScrollView>
+    <StatusBar style='light' /></View>;
 }

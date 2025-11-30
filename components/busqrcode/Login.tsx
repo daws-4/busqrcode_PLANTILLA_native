@@ -61,17 +61,17 @@ export function Login() {
   return (
     <Screen>
       <View className="flex flex-cols justify-center items-center">
-        <View className="bg-white px-2 pt-10 pb-2 flex flex-row justify-between items-center border-b-2 border-stone-600 w-full">
-          <Text className="text-xl text-black text-black/90 ">
+        <View className="pb-2 mt-6 mb-1 flex flex-row  border-stone-600 w-full">
+          <Text className="text-xl text-light-success ">
             Iniciar Sesión como Fiscal
           </Text>
         </View>
         <Logo1 />
-        <Text className="text-xl text-black text-black/90 ">{linea}</Text>
+        <Text className="text-xl text-white ">{linea}</Text>
       </View>
-      <View className="mb-10 rounded-sm bg-slate-200 shadow-default dark:border-strokedark dark:bg-boxdark">
+      <View className="mb-10 rounded-sm bg-light-secondary shadow-default dark:border-strokedark dark:bg-light-secondary">
         <View className="flex justify-center items-center m-5">
-          <Text className="font-bold text-3xl m-2 text-black text-black/90 ">
+          <Text className="font-bold text-3xl m-2 text-white ">
             Inicia Sesión
           </Text>
           <View className="w-full mt-4">
@@ -92,7 +92,7 @@ export function Login() {
             />
           </View>
           <Pressable
-            className="p-2 m-4 bg-green-700 rounded border-2 border-green-800 "
+            className="p-2 m-4 bg-light-success rounded border-2 border-green-800 "
             onPress={() => submitData()}
           >
             <Text className="text-white text-lg ">Iniciar Sesión</Text>
@@ -100,7 +100,7 @@ export function Login() {
         </View>
       </View>
       <View>
-        <Text className="text-black text-black/90 text-center">
+        <Text className="text-white text-center">
           © {now.getFullYear()} {linea} ver.1.0
         </Text>
       </View>

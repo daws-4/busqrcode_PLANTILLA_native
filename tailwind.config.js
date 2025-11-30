@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+
 module.exports = {
   content: [
     "./App.{js,ts,tsx}",
@@ -20,16 +21,20 @@ module.exports = {
         global: '16px'
       },
       colors: {
-        // Light theme colors
         highlight: '#0EA5E9',
         light: {
-          primary: '#F5F5F5', // Light gray
-          secondary: '#FFFFFF', // White
+          primary: '#1E303E', // PrincipalBackground
+          secondary: '#2f4f68ff', // CardBackground
+          text: '#222222', // CardText
+          success: '#49B3A0', // SuccessColor
+          torch: '#CF902A', // TorchIcon
         },
-        // Dark theme colors
         dark: {
-          primary: '#171717', // Black
-          secondary: '#323232',
+          primary: '#0f172a', // Darker background for dark mode
+          secondary: '#1E303E', // Reusing PrincipalBackground as card background for dark mode
+          text: '#F3F4F6', // Light text
+          success: '#34D399', // Slightly lighter success color
+          torch: '#FBBF24', // Lighter torch icon
         },
       },
     },

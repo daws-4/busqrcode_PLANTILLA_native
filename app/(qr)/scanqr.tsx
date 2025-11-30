@@ -70,28 +70,26 @@ export default function Scanqr() {
 
         <View className="flex flex-col justify-center items-center">
           {permission ? (
-            <CameraView
-              onBarcodeScanned={handleBarCodeScanned}
-              facing={type}
-              enableTorch={flash}
-              style={{ width: 400, height: 400 }}
-            >
-              <View className='flex p-4 ml-6 w-14'>
-
-                <Pressable onPress={toggleFlash} className='bg-slate-100 '>
+            <View style={{ position: 'relative', width: 400, height: 400 }}>
+              <CameraView
+                onBarcodeScanned={handleBarCodeScanned}
+                facing={type}
+                enableTorch={flash}
+                style={{ width: 400, height: 400 }}
+              />
+              <View style={{ position: 'absolute', top: 10, left: 45, zIndex: 10 }}>
+                <Pressable onPress={toggleFlash} className='bg-light-secondary p-2 rounded'>
                   {flash ? <FlashOn /> : <FlashOff />}
                 </Pressable>
               </View>
-            </CameraView>
+            </View>
           ) : (
-            <Text>Se han negado los permisos a la cámara</Text>
+            <Text className="text-light-text">Se han negado los permisos a la cámara</Text>
           )}
-          <Pressable onPress={toggleFlash} >
-          </Pressable>
           {busData ? (
             <View className="mt-6 p-4">
-              <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-                <Text className="font-bold text-black">Unidad: </Text>
+              <Text className="text-light-text mb-2 mx-4 text-lg">
+                <Text className="font-bold text-light-text">Unidad: </Text>
                 {busData.numero}
               </Text>
 
@@ -101,20 +99,20 @@ export default function Scanqr() {
                     setBusId(null);
                     setBusData(null);
                   }}
-                  className="p-3 bg-slate-200 rounded items-center justify-center border-slate-800 border-2"
+                  className="p-3 bg-light-secondary rounded items-center justify-center border-slate-800 border-2"
                 >
-                  <Text className="text-lg font-bold">Escánear de nuevo</Text>
+                  <Text className="text-lg font-bold text-light-text">Escánear de nuevo</Text>
                 </Pressable>
                 <Link asChild href="/scaner">
-                  <Pressable className="mt-4 p-3 bg-emerald-400 rounded items-center justify-center border-slate-800 border-2">
-                    <Text className="text-lg font-bold">Enviar Datos</Text>
+                  <Pressable className="mt-4 p-3 bg-light-success rounded items-center justify-center border-slate-800 border-2">
+                    <Text className="text-lg font-bold text-white">Enviar Datos</Text>
                   </Pressable>
                 </Link>
               </View>
             </View>
           ) : (
-            <View className="mt-5 p-4 bg-slate-200 rounded">
-              <Text className="text-xl ">
+            <View className="mt-5 p-4 bg-light-secondary rounded">
+              <Text className="text-xl text-light-text">
                 Apunta al código QR que está en la unidad
               </Text>
             </View>

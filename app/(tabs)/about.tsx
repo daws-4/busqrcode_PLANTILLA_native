@@ -23,37 +23,36 @@ export default function About() {
 
   return (
     <Screen>
-      <ScrollView>
         <StyledPressable
           className="flex flex-row active:opacity-80 items-center mb-2 justify-end"
           onPress={() => logout()}
         >
-          <View className="flex flex-row bg-slate-300 p-2 rounded border-2 border-slate-700">
-            <Text className="text-lg mr-2">Cerrar Sesión</Text>
+          <View className="flex flex-row bg-light-success p-2 rounded border-2 border-slate-700">
+            <Text className="text-lg mr-2 text-white">Cerrar Sesión</Text>
             <LogoutIcon />
           </View>
         </StyledPressable>
 
-        <Text className="text-black font-bold mb-4 text-2xl">
+        <Text className="text-white font-bold mb-4 text-2xl">
           Info del Fiscal
         </Text>
         {user && (
           <View>
-            <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-              <Text className="font-bold text-black">Nombre de usuario: </Text>
+            <Text className="text-white mb-2 mx-4 text-lg">
+              <Text className="font-bold text-light-success">Nombre de usuario: </Text>
               {user.username}{" "}
-              <Text className="font-bold text-black">Número: </Text> {user.numero}
+              <Text className="font-bold text-light-success">Número: </Text> {user.numero}
             </Text>
-            <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-              <Text className="font-bold text-black">Ubicación: </Text>
+            <Text className="text-white mb-2 mx-4 text-lg">
+              <Text className="font-bold text-light-success">Ubicación: </Text>
               {user.ubicacion}
             </Text>
-            <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-              <Text className="font-bold text-black">Rutas Asignadas: </Text>
+            <Text className="text-white mb-2 mx-4 text-lg">
+              <Text className="font-bold text-light-success">Rutas Asignadas: </Text>
             </Text>
-            {rutas.map((ruta:any) => (
+            {rutas.map((ruta: any) => (
               <Text
-                className="text-black text-black/90 mb-2 mx-4 text-lg"
+                className="text-white mb-2 mx-4 text-lg"
                 key={ruta._id}
               >
                 {ruta.nombre}
@@ -62,25 +61,25 @@ export default function About() {
           </View>
         )}
 
-        <Text className="text-black font-bold mb-4 text-2xl">Guía de uso</Text>
+        <Text className="text-white font-bold mb-4 text-2xl">Guía de uso</Text>
 
-        <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-          <Text className="font-bold text-black ">Paso 1: </Text>
+        <Text className="text-white mb-2 mx-4 text-lg">
+          <Text className="font-bold text-light-success ">Paso 1: </Text>
           En la pestaña de "Escaner" presionar el botón "Escanear Código QR"
         </Text>
-        <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-          <Text className="font-bold text-black ">Paso 2: </Text>
+        <Text className="text-white mb-2 mx-4 text-lg">
+          <Text className="font-bold text-light-success ">Paso 2: </Text>
           Apunta al código QR que está en la unidad
         </Text>
-        <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-          <Text className="font-bold text-black ">Paso 3: </Text>
+        <Text className="text-white mb-2 mx-4 text-lg">
+          <Text className="font-bold text-light-success ">Paso 3: </Text>
           Selecciona la ruta que corresponede a la unidad en ese momento
         </Text>
-        <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-          <Text className="font-bold text-black ">Paso 4: </Text>
+        <Text className="text-white mb-2 mx-4 text-lg">
+          <Text className="font-bold text-light-success ">Paso 4: </Text>
           Presiona el botón "Enviar Datos"
         </Text>
-      </ScrollView>
+        
     </Screen>
   );
 }

@@ -113,7 +113,8 @@ export function Main() {
       setBusList(buses);
       setRutas(rutasl);
     } catch (error) {
-      console.log(error + " error");
+      console.log(busList, rutas);
+      // console.log(error + " error");
     } finally {
       setIsLoading(false); // Finalizar carga
     }
@@ -123,8 +124,8 @@ export function Main() {
     try {
       const timeout = new Promise((_, reject) =>
         setTimeout(
-          () => reject(new Error("La solicitud tardó demasiado en responder")),
-          10000
+          () =>
+            10000
         )
       );
 
@@ -142,11 +143,7 @@ export function Main() {
         setGetRegistros(sortedData);
       }
     } catch (error: any) {
-      if (error.message === "La solicitud tardó demasiado en responder") {
-        Alert.alert("Error", "La solicitud tardó demasiado en responder. Verifique su conexión.");
-      } else {
-        console.log(error.message + " error");
-      }
+      Alert.alert("Error", "La solicitud tardó demasiado en responder. Verifique su conexión.");
     } finally {
       setIsLoading(false);
     }
@@ -458,13 +455,12 @@ export function Main() {
   };
 
   return (
-    <ScrollView>
-      <Screen>
+    <Screen>
         <View className="flex flex-col items-center justify-center">
-          <Text className="text-2xl">Bienvenido Fiscal {user?.numero}</Text>
+          <Text className="text-2xl text-white">Bienvenido Fiscal {user?.numero}</Text>
           <Link asChild href="/scanqr">
-            <Pressable className="bg-slate-400 p-2 m-4 rounded">
-              <Text className="text-xl font-bold">Escánea el código QR</Text>
+            <Pressable className="bg-light-success p-2 m-4 rounded">
+              <Text className="text-xl font-bold text-light-text">Escánea el Código QR </Text>
             </Pressable>
           </Link>
           {/* {busQueue.length > 0 && (
@@ -479,122 +475,125 @@ export function Main() {
             </Text>
           </Pressable> */}
         </View>
-        {busData && (
-          <View className="mt-6 p-4">
-            <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-              <Text className="font-bold text-black">Unidad: </Text>
-              {busData.numero}
-            </Text>
-            <>
-              {(user?.setruta || user?.sethora) && (
-                <View className="m-3 bg-slate-200 rounded">
-                  <Picker
-                    selectedValue={selectedRuta}
-                    onValueChange={(itemValue, itemIndex) =>
-                      setSelectedRuta(itemValue)
-                    }
-                  >
-                    <Picker.Item
-                      key="none"
-                      label="Selecciona una Ruta"
-                      value={null}
-                    />
-                    {rutas.map((r) => (
-                      <Picker.Item key={r._id} label={r.nombre} value={r._id} />
-                    ))}
-                  </Picker>
-                </View>
-              )}
 
-              {user?.sethora ? (
-                <View>
-                  <Pressable
-                    className="p-3 mt-10 bg-slate-200 rounded items-center justify-center border-slate-800 border-2"
-                    onPress={() => setShowTimePicker(true)}
-                  >
-                    <Text className="text-lg font-bold">Hora de Salida</Text>
-                  </Pressable>
-                  {showTimePicker && (
-                    <DateTimePicker
-                      value={selectedTime}
-                      mode="time"
-                      display="default"
-                      onChange={onTimeChange}
-                    />
-                  )}
-
-                  <View>
-                    <Text className="text-base">
-                      Hora seleccionada:{" "}
-                      {selectedRealTime ? formatDate1(selectedRealTime) : ""}{" "}
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
-            </>
-            {isSubmitting ? (
-              <View className="p-3 mt-10 bg-slate-200 rounded items-center justify-center border-slate-800 border-2">
-                <Text className="text-lg font-bold">Enviando...</Text>
+          {busData && (
+            <View className="mt-6 p-4">
+              <View className="flex items-center justify-center">
+                <Text className="text-light-text mb-2 mx-4 text-lg text-white">
+                  <Text className="font-bold text-light-success">Unidad: </Text>
+                  {busData.numero}
+                </Text>
               </View>
-            ) : (
-              <Pressable
-                onPress={() => handleSubmit()}
-                className="p-3 mt-10 bg-slate-200 rounded items-center justify-center border-slate-800 border-2"
-              >
-                <Text className="text-lg font-bold">Enviar Datos</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
-
-        {user?.sethora ? (
-          <View className="m-6">
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#0000ff" />
-            ) : getRegistros.length > 0 ? (
-              <View className="mt-6 p-4">
-                {getRegistros.map((registro) => {
-                  const bus = busList.find(
-                    (bus) => bus._id === registro.id_unidad
-                  );
-                  return (
-                    <View
-                      className="m-4 p-4 bg-slate-200 rounded "
-                      key={registro._id}
+              <>
+                {(user?.setruta || user?.sethora) && (
+                  <View className="m-3 bg-light-secondary rounded">
+                    <Picker
+                      selectedValue={selectedRuta}
+                      onValueChange={(itemValue, itemIndex) =>
+                        setSelectedRuta(itemValue)
+                      }
                     >
-                      <View className="flex flex-row justify-between">
-                        <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-                          <Text className="font-bold text-black">
-                            Control:{" "}
-                          </Text>
-                          {bus ? bus.numero : "N/A"}
-                        </Text>
-                        {user.setdelete && (
-                          <Pressable
-                            onPress={() => deleteRegistro(registro._id)}
-                          >
-                            <DeleteIcon />
-                          </Pressable>
-                        )}
-                      </View>
-                      <Text className="text-black text-black/90 mb-2 mx-4 text-lg">
-                        <Text className="font-bold text-black">
-                          Hora de salida:{" "}
-                        </Text>
-                        {formatDate1(registro.timestamp_salida)}
+                      <Picker.Item
+                        key="none"
+                        label="Selecciona una Ruta"
+                        value={null}
+                      />
+                      {rutas.map((r) => (
+                        <Picker.Item key={r._id} label={r.nombre} value={r._id} />
+                      ))}
+                    </Picker>
+                  </View>
+                )}
+
+                {user?.sethora ? (
+                  <View>
+                    <Pressable
+                      className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2"
+                      onPress={() => setShowTimePicker(true)}
+                    >
+                      <Text className="text-lg font-bold">Hora de Salida</Text>
+                    </Pressable>
+                    {showTimePicker && (
+                      <DateTimePicker
+                        value={selectedTime}
+                        mode="time"
+                        display="default"
+                        onChange={onTimeChange}
+                      />
+                    )}
+
+                    <View>
+                      <Text className="text-base">
+                        Hora seleccionada:{" "}
+                        {selectedRealTime ? formatDate1(selectedRealTime) : ""}{" "}
                       </Text>
                     </View>
-                  );
-                })}
-              </View>
-            ) : (
-              <Text>No hay registros disponibles</Text>
-            )}
-          </View>
-        ) : (
-          ""
-        )}
+                  </View>
+                ) : null}
+              </>
+              {isSubmitting ? (
+                <View className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2">
+                  <Text className="text-lg font-bold text-light-text">Enviando...</Text>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => handleSubmit()}
+                  className="p-3 mt-10 bg-light-success rounded items-center justify-center border-slate-800 border-2"
+                >
+                  <Text className="text-lg font-bold text-white">Enviar Datos</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {user?.sethora ? (
+            <View className="m-6">
+              {isLoading ? (
+                <ActivityIndicator size="large" color="#0000ff" />
+              ) : getRegistros.length > 0 ? (
+                <View className="mt-6 p-4">
+                  {getRegistros.map((registro) => {
+                    const bus = busList.find(
+                      (bus) => bus._id === registro.id_unidad
+                    );
+                    return (
+                      <View
+                        className="m-4 p-4 bg-white rounded "
+                        key={registro._id}
+                      >
+                        <View className="flex flex-row justify-between">
+                          <Text className="text-light-text mb-2 mx-4 text-lg">
+                            <Text className="font-bold ">
+                              Control:{" "}
+                            </Text>
+                            {bus ? bus.numero : "N/A"}
+                          </Text>
+                          {user.setdelete && (
+                            <Pressable
+                              onPress={() => deleteRegistro(registro._id)}
+                            >
+                              <DeleteIcon />
+                            </Pressable>
+                          )}
+                        </View>
+                        <Text className="text-light-text mb-2 mx-4 text-lg">
+                          <Text className="font-bold text-light-text">
+                            Hora de salida:{" "}
+                          </Text>
+                          {formatDate1(registro.timestamp_salida)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text className="text-white">No hay registros disponibles</Text>
+              )}
+            </View>
+          ) : (
+            ""
+          )}
+
       </Screen>
-    </ScrollView>
   );
 }
