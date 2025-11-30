@@ -1,15 +1,11 @@
 {
   "expo": {
-    "newArchEnabled": true,
-    "name": "Thomino's playground",
-    "slug": "thomino-playground",
-    "version": "1.0.0",
-    "runtimeVersion": "1.0.0",
-    "scheme": "thomino-playground",
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "extra": {
+      "eas": {
+        "projectId": "2260ccda-fb4c-4724-a87a-625a3191ea2e"
+      }
     },
-    "experiments": {
+        "experiments": {
       "tsconfigPaths": true
     },
     "plugins": [
@@ -27,11 +23,8 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.thomino.thominoplayground"
-    },
-    "android": {
+   "android": {
+      "package": "com.dawszz_4.busqrcode_plantilla_native",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -40,13 +33,6 @@
       "softwareKeyboardLayoutMode": "pan",
       "navigationBarColor": "transparent",
       "navigationBarHidden": true,
-      "package": "com.thomino.thominoplayground"
-    },
-    "extra": {
-      "router": {
-        "origin": false
-      }
-    },
-    "owner": "thomino"
+    }
   }
 }

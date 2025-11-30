@@ -1,5 +1,5 @@
 {
-  "name": "playground",
+  "name": "busqrcode_plantilla_native",
   "version": "1.0.0",
   "scripts": {
     "android": "expo start --android",
