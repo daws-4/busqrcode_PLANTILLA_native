@@ -1,0 +1,113 @@
+      setConnectionStatus('🔍 Descubriendo servicios...');
+      
+      // Obtener información completa del dispositivo
+      const peripheralInfo = await BleManager.retrieveServices(peripheralId);
+      console.log('📋 Información del dispositivo:', peripheralInfo);
+      
+      // Buscar características disponibles
+      const characteristics = peripheralInfo.characteristics || [];
+      console.log(`✅ Encontradas ${characteristics.length} características`);
+      
+      if (characteristics.length === 0) {
+        throw new Error('No se encontraron características en el dispositivo');
+      }
+      
+      // Buscar característica WRITE (para enviar la clave)
+      const writeChar = characteristics.find(
+        (char: any) => char.properties?.Write || char.properties?.WriteWithoutResponse
+      );
+      
+      // Buscar característica READ (para leer los datos)
+      const readChar = characteristics.find(
+        (char: any) => char.properties?.Read
+      );
+      
+      console.log('💡 Característica Write:', writeChar);
+      console.log('💡 Característica Read:', readChar);
+      
+      if (!writeChar) {
+        throw new Error('No se encontró característica Write en el dispositivo');
+      }
+      
+      if (!readChar) {
+        throw new Error('No se encontró característica Read en el dispositivo');
+      }
+      
+      // Extraer UUIDs
+      const writeCharUUID = writeChar.characteristic;
+      const writeServiceUUID = writeChar.service;
+      const readCharUUID = readChar.characteristic;
+      const readServiceUUID = readChar.service;
+      
+      console.log(`📝 Write: Service=${writeServiceUUID}, Char=${writeCharUUID}`);
+      console.log(`📖 Read: Service=${readServiceUUID}, Char=${readCharUUID}`);
+      
+      setConnectionStatus('🔐 Autenticando...');
+      
+      // La clave es el _id de la unidad
+      const authKey = busData._id;
+      console.log(`🔐 Enviando clave de autenticación: ${authKey}`);
+      
+      // Convertir clave a bytes
+      const authBytes = stringToBytes(authKey);
+      
+      // Escribir clave de autenticación
+      await BleManager.write(
+        peripheralId,
+        writeServiceUUID,
+        writeCharUUID,
+        authBytes
+      );
+      
+      console.log('✅ Clave enviada');
+      setConnectionStatus('📥 Leyendo datos...');
+      
+      // Esperar un momento para que el dispositivo procese
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Leer datos del dispositivo
+      const data = await BleManager.read(
+        peripheralId,
+        readServiceUUID,
+        readCharUUID
+      );
+      
+      console.log('📥 Datos recibidos (bytes):', data);
+      
+      // Convertir bytes a string
+      const dataString = bytesToString(data);
+      console.log('📥 Datos recibidos (string):', dataString);
+      
+      // Intentar parsear como JSON
+      let parsedData = tryParseJSON(dataString);
+      
+      // Si no es JSON válido, intentar parsear manualmente
+      if (!parsedData) {
+        console.log('⚠️ Los datos no son JSON válido, usando como texto');
+        parsedData = { raw: dataString };
+      }
+      
+      console.log('✅ Datos parseados:', parsedData);
+      
+      // Guardar datos
+      setBleData(parsedData);
+      setConnectionStatus('✅ Datos recibidos');
+      setIsConnecting(false);
+      
+      Alert.alert(
+        'Datos Recibidos',
+        `Conteo: ${parsedData.conteo || 'N/A'}\\nUnidad ${busData.numero}: ${parsedData[`Unidad_${busData.numero}`] || 'N/A'}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => disconnectDevice()
+          }
+        ]
+      );
+      
+    } catch (error) {
+      console.error('❌ Error en autenticación/lectura:', error);
+      Alert.alert('Error', `No se pudieron obtener los datos del dispositivo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      setConnectionStatus(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      setIsConnecting(false);
+    }
