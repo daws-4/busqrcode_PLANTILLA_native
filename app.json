@@ -10,17 +10,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
-      "./plugins/withAndroidBlePermissions",
-      [
-        "react-native-ble-manager",
-        {
-          "isBleRequired": true,
-          "neverForLocation": true,
-          "companionDeviceEnabled": false,
-          "bluetoothAlwaysPermission": "Allow BLE DEMO APP to connect to bluetooth devices"
-        }
-      ]
+      "expo-font"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -39,19 +29,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "BLUETOOTH_SCAN",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_ADVERTISE",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ],
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "navigationBarColor": "transparent",
-      "navigationBarHidden": true
+      "navigationBarHidden": true,
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     }
   }
 }
