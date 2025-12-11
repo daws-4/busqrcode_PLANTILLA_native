@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  PermissionsAndroid,
+  Platform,
 } from "react-native";
 import {
   useUserContext,
@@ -17,6 +19,8 @@ import {
   useBusListToggleContext,
   useBusQueueContext,
   useBusQueueToggleContext,
+  usePCounterContext,
+  usePCounterToggleContext,
   ConnectionStateContext,
   ConnectionStateToggleContext,
   UrlConnectionContext,
@@ -28,6 +32,9 @@ import axios from "axios";
 import { Link } from "expo-router";
 import { DeleteIcon } from "./Icons";
 import NetInfo from "@react-native-community/netinfo";
+import RNBluetoothClassic, {
+  BluetoothDevice,
+} from 'react-native-bluetooth-classic';
 
 // Define interfaces
 interface User {
@@ -61,6 +68,12 @@ interface RequestData {
   timestamp_telefono: string;
   timestamp_salida: Date;
   id_fiscal: string;
+  passenger_count?: number | null;
+}
+
+interface ESP32Data {
+  conteo?: number;
+  "Unidad 1"?: string;
 }
 
 export function Main() {
@@ -73,6 +86,8 @@ export function Main() {
   const busQueue = useBusQueueContext() as RequestData[];
   const setBusQueue = useBusQueueToggleContext();
   const setBusList = useBusListToggleContext();
+  const pCounter = usePCounterContext() as number | null;
+  const setPCounter = usePCounterToggleContext();
   const connection = ConnectionStateContext();
   const url = UrlConnectionContext();
   const setConnection = ConnectionStateToggleContext();
@@ -89,6 +104,14 @@ export function Main() {
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
   const [connectionTest, setConnectionTest] = useState(true);
+
+  // Bluetooth Classic states
+  const [selectedDevice, setSelectedDevice] = useState<BluetoothDevice | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [btLoading, setBtLoading] = useState(false);
+  const [receivedData, setReceivedData] = useState<string>("");
+  const [parsedData, setParsedData] = useState<ESP32Data | null>(null);
+  const [btStatusMessage, setBtStatusMessage] = useState("");
 
   //-------------------------- IMPORTANTE -----------------------
 
@@ -149,6 +172,7 @@ export function Main() {
     }
   };
   useEffect(() => {
+    requestBluetoothPermissions();
     fetchData();
   }, []);
 
@@ -186,6 +210,222 @@ export function Main() {
       { cancelable: false }
     );
   };
+
+  // ==================== BLUETOOTH CLASSIC FUNCTIONS ====================
+
+  const requestBluetoothPermissions = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+
+        if (
+          granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log('✅ Permisos Bluetooth concedidos');
+        } else {
+          Alert.alert('Permisos denegados', 'Se requieren permisos de Bluetooth para continuar');
+        }
+      } catch (err) {
+        console.error('Error solicitando permisos:', err);
+      }
+    }
+  };
+
+  const checkBluetoothEnabled = async () => {
+    try {
+      const isEnabled = await RNBluetoothClassic.isBluetoothEnabled();
+      if (!isEnabled) {
+        Alert.alert(
+          'Bluetooth desactivado',
+          'Por favor, activa el Bluetooth para continuar',
+          [
+            {
+              text: 'Activar',
+              onPress: async () => {
+                try {
+                  await RNBluetoothClassic.requestBluetoothEnabled();
+                } catch (error) {
+                  console.error('Error activando Bluetooth:', error);
+                }
+              },
+            },
+            { text: 'Cancelar', style: 'cancel' },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error verificando estado de Bluetooth:', error);
+    }
+  };
+
+  const scanAndConnectToDevice = async (deviceName: string, key: string) => {
+    try {
+      setBtLoading(true);
+      setBtStatusMessage("");
+      console.log('🔍 Buscando dispositivo:', deviceName);
+
+      await checkBluetoothEnabled();
+
+      const bondedDevices = await RNBluetoothClassic.getBondedDevices();
+      console.log('📱 Dispositivos vinculados:', bondedDevices.length);
+
+      const unpaired = await RNBluetoothClassic.startDiscovery();
+      console.log('📡 Dispositivos descubiertos:', unpaired.length);
+
+      const allDevices = [...bondedDevices, ...unpaired];
+
+      const targetDevice = allDevices.find(
+        (device: any) => device.name === deviceName
+      );
+
+      if (!targetDevice) {
+        console.log('❌ Dispositivo no encontrado:', deviceName);
+        console.log('ℹ️ Continuando sin datos del ESP32');
+        setPCounter(null);
+        setBtLoading(false);
+        return;
+      }
+
+      console.log('✅ Dispositivo encontrado, conectando...');
+      await connectToDevice(targetDevice, key);
+    } catch (error) {
+      console.error('❌ Error en escaneo:', error);
+      console.log('ℹ️ Continuando sin datos del ESP32');
+      setPCounter(null);
+      setBtLoading(false);
+    }
+  };
+
+  const connectToDevice = async (device: any, key: string) => {
+    try {
+      console.log('🔗 Intentando conectar a:', device.name, device.address);
+
+      let connectedDevice = null;
+
+      try {
+        // Intento 1: Conexión segura
+        console.log('🔐 Intento 1: Conexión segura...');
+        connectedDevice = await RNBluetoothClassic.connectToDevice(device.address);
+      } catch (error) {
+        console.log('⚠️ Conexión segura falló, intentando insegura...');
+        // Intento 2: Conexión insegura
+        try {
+          connectedDevice = await RNBluetoothClassic.connectToDevice(device.address, {
+            connectorType: 'rfcomm',
+            DELIMITER: '\n',
+            DEVICE_CHARSET: 'utf-8'
+          });
+        } catch (error2) {
+          throw new Error('No se pudo conectar con ningún método');
+        }
+      }
+
+      if (connectedDevice) {
+        setSelectedDevice(connectedDevice);
+        setConnected(true);
+        console.log('✅ Conectado exitosamente a:', device.name);
+
+        // Configurar listener y enviar clave
+        setupDataListener(connectedDevice);
+        await sendKey(connectedDevice, key);
+      }
+    } catch (error) {
+      console.error('❌ Error conectando a dispositivo:', error);
+      console.log('ℹ️ Continuando sin datos del ESP32');
+      setPCounter(null);
+      setBtLoading(false);
+    }
+  };
+
+  const setupDataListener = (device: BluetoothDevice) => {
+    console.log('🎧 Configurando listener de datos...');
+
+    device.onDataReceived((event) => {
+      const incomingData = event.data;
+      console.log('📨 Datos recibidos del ESP32:', incomingData);
+
+      setReceivedData(prev => {
+        const newData = prev + incomingData;
+        console.log('📝 Datos acumulados:', newData);
+
+        // Intentar extraer y parsear el JSON
+        try {
+          const jsonMatch = newData.match(/\{[\s\S]*?\}/);
+          if (jsonMatch) {
+            const jsonData = JSON.parse(jsonMatch[0]) as ESP32Data;
+            console.log('✅ JSON parseado exitosamente:', jsonData);
+            setParsedData(jsonData);
+
+            // Actualizar el contexto PCounter
+            if (jsonData.conteo !== undefined) {
+              setPCounter(jsonData.conteo);
+              setBtStatusMessage("Datos de pasajeros recibidos correctamente");
+              console.log('✅ PCounter actualizado:', jsonData.conteo);
+            }
+          }
+        } catch (e) {
+          console.log('⏳ Esperando JSON completo...');
+        }
+
+        return newData;
+      });
+    });
+  };
+
+  const sendKey = async (device: BluetoothDevice, key: string) => {
+    try {
+      console.log('🔑 Enviando clave al ESP32:', key);
+      await device.write(key + '\n');
+      console.log('✅ Clave enviada correctamente');
+
+      // Esperar respuesta
+      setTimeout(() => {
+        setBtLoading(false);
+      }, 2500);
+    } catch (error) {
+      console.error('❌ Error enviando clave:', error);
+      setBtLoading(false);
+    }
+  };
+
+  const disconnectDevice = async () => {
+    try {
+      if (selectedDevice) {
+        await selectedDevice.disconnect();
+        setConnected(false);
+        setSelectedDevice(null);
+        setReceivedData("");
+        setParsedData(null);
+        console.log('🔌 Dispositivo desconectado');
+      }
+    } catch (error) {
+      console.error('Error desconectando:', error);
+    }
+  };
+
+  // Conexión automática cuando se carga busData
+  useEffect(() => {
+    if (busData && busData.numero && busData._id) {
+      const deviceName = `Unidad_${busData.numero}`;
+      const key = busData._id;
+      scanAndConnectToDevice(deviceName, key);
+    }
+
+    // Cleanup al desmontar
+    return () => {
+      if (selectedDevice && connected) {
+        disconnectDevice();
+      }
+    };
+  }, [busData]);
+
+  // ==================== END BLUETOOTH CLASSIC FUNCTIONS ====================
 
   //petición de la cola hacia el servidor
 
@@ -289,6 +529,7 @@ export function Main() {
             timestamp_telefono: utcDate,
             timestamp_salida: selectedTime,
             id_fiscal: user?._id || "",
+            passenger_count: pCounter,
           };
 
           // Intentar enviar la petición
@@ -313,6 +554,8 @@ export function Main() {
 
           setSelectedRuta(null);
           setBusData(null);
+          setPCounter(null);
+          setBtStatusMessage("");
           // }
         } finally {
           setIsSubmitting(false); // Establecer isSubmitting a false al final
@@ -345,6 +588,7 @@ export function Main() {
             timestamp_telefono: utcDate,
             timestamp_salida: selectedTime,
             id_fiscal: user?._id || "",
+            passenger_count: pCounter,
           };
 
           // Intentar enviar la petición
@@ -368,6 +612,8 @@ export function Main() {
 
           setSelectedRuta(null);
           setBusData(null);
+          setPCounter(null);
+          setBtStatusMessage("");
           // }
         } finally {
           setIsSubmitting(false); // Establecer isSubmitting a false al final
@@ -456,144 +702,154 @@ export function Main() {
 
   return (
     <Screen>
-        <View className="flex flex-col items-center justify-center">
-          <Text className="text-2xl text-white">Bienvenido Fiscal {user?.numero}</Text>
-          <Link asChild href="/scanqr">
-            <Pressable className="bg-light-success p-2 m-4 rounded">
-              <Text className="text-xl font-bold text-light-text">Escánea el Código QR </Text>
-            </Pressable>
-          </Link>
-          {/* {busQueue.length > 0 && (
-                <Pressable className="bg-slate-400 p-2 m-4 rounded" onPress={() => processQueue()}>
-            <Text className="text-xl font-bold">Enviar Cola</Text>
+      <View className="flex flex-col items-center justify-center">
+        <Text className="text-2xl text-white">Bienvenido Fiscal {user?.numero}</Text>
+        <Link asChild href="/scanqr">
+          <Pressable className="bg-light-success p-2 m-4 rounded">
+            <Text className="text-xl font-bold text-light-text">Escánea el Código QR </Text>
           </Pressable>
-              )} */}
+        </Link>
+      </View>
 
-          {/* <Pressable className="bg-slate-400 p-2 m-4 rounded" onPress={() => setConnectionTest(!connectionTest)}>
-            <Text className="text-xl font-bold">
-              {connection ? 'Conectado' : 'Desconectado'}
+      {busData && (
+        <View className="mt-6 p-4">
+          <View className="flex items-center justify-center">
+            <Text className="text-light-text mb-2 mx-4 text-lg text-white">
+              <Text className="font-bold text-light-success">Unidad: </Text>
+              {busData.numero}
             </Text>
-          </Pressable> */}
-        </View>
-
-          {busData && (
-            <View className="mt-6 p-4">
-              <View className="flex items-center justify-center">
-                <Text className="text-light-text mb-2 mx-4 text-lg text-white">
-                  <Text className="font-bold text-light-success">Unidad: </Text>
-                  {busData.numero}
+          </View>
+          <>
+            {btStatusMessage && (
+              <View className={`m-3 p-3 rounded ${btStatusMessage.includes("correctamente")
+                ? "bg-green-100"
+                : "bg-red-100"
+                }`}>
+                <Text className={`text-center ${btStatusMessage.includes("correctamente")
+                  ? "text-green-800"
+                  : "text-red-800"
+                  }`}>
+                  {btStatusMessage}
                 </Text>
               </View>
-              <>
-                {(user?.setruta || user?.sethora) && (
-                  <View className="m-3 bg-light-secondary rounded">
-                    <Picker
-                      selectedValue={selectedRuta}
-                      onValueChange={(itemValue, itemIndex) =>
-                        setSelectedRuta(itemValue)
-                      }
-                    >
-                      <Picker.Item
-                        key="none"
-                        label="Selecciona una Ruta"
-                        value={null}
-                      />
-                      {rutas.map((r) => (
-                        <Picker.Item key={r._id} label={r.nombre} value={r._id} />
-                      ))}
-                    </Picker>
-                  </View>
+            )}
+            {btLoading && (
+              <View className="m-3 p-3 rounded bg-blue-100">
+                <View className="flex-row items-center justify-center">
+                  <ActivityIndicator size="small" color="#1e40af" />
+                  <Text className="text-blue-800 ml-2">Conectando con ESP32...</Text>
+                </View>
+              </View>
+            )}
+            {(user?.setruta || user?.sethora) && (
+              <View className="m-3 bg-light-secondary rounded">
+                <Picker
+                  selectedValue={selectedRuta}
+                  onValueChange={(itemValue, itemIndex) =>
+                    setSelectedRuta(itemValue)
+                  }
+                >
+                  <Picker.Item
+                    key="none"
+                    label="Selecciona una Ruta"
+                    value={null}
+                  />
+                  {rutas.map((r) => (
+                    <Picker.Item key={r._id} label={r.nombre} value={r._id} />
+                  ))}
+                </Picker>
+              </View>
+            )}
+
+            {user?.sethora ? (
+              <View>
+                <Pressable
+                  className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2"
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Text className="text-lg font-bold">Hora de Salida</Text>
+                </Pressable>
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={selectedTime}
+                    mode="time"
+                    display="default"
+                    onChange={onTimeChange}
+                  />
                 )}
 
-                {user?.sethora ? (
-                  <View>
-                    <Pressable
-                      className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2"
-                      onPress={() => setShowTimePicker(true)}
-                    >
-                      <Text className="text-lg font-bold">Hora de Salida</Text>
-                    </Pressable>
-                    {showTimePicker && (
-                      <DateTimePicker
-                        value={selectedTime}
-                        mode="time"
-                        display="default"
-                        onChange={onTimeChange}
-                      />
-                    )}
-
-                    <View>
-                      <Text className="text-base">
-                        Hora seleccionada:{" "}
-                        {selectedRealTime ? formatDate1(selectedRealTime) : ""}{" "}
-                      </Text>
-                    </View>
-                  </View>
-                ) : null}
-              </>
-              {isSubmitting ? (
-                <View className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2">
-                  <Text className="text-lg font-bold text-light-text">Enviando...</Text>
+                <View>
+                  <Text className="text-base">
+                    Hora seleccionada:{" "}
+                    {selectedRealTime ? formatDate1(selectedRealTime) : ""}{" "}
+                  </Text>
                 </View>
-              ) : (
-                <Pressable
-                  onPress={() => handleSubmit()}
-                  className="p-3 mt-10 bg-light-success rounded items-center justify-center border-slate-800 border-2"
-                >
-                  <Text className="text-lg font-bold text-white">Enviar Datos</Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-
-          {user?.sethora ? (
-            <View className="m-6">
-              {isLoading ? (
-                <ActivityIndicator size="large" color="#0000ff" />
-              ) : getRegistros.length > 0 ? (
-                <View className="mt-6 p-4">
-                  {getRegistros.map((registro) => {
-                    const bus = busList.find(
-                      (bus) => bus._id === registro.id_unidad
-                    );
-                    return (
-                      <View
-                        className="m-4 p-4 bg-white rounded "
-                        key={registro._id}
-                      >
-                        <View className="flex flex-row justify-between">
-                          <Text className="text-light-text mb-2 mx-4 text-lg">
-                            <Text className="font-bold ">
-                              Control:{" "}
-                            </Text>
-                            {bus ? bus.numero : "N/A"}
-                          </Text>
-                          {user.setdelete && (
-                            <Pressable
-                              onPress={() => deleteRegistro(registro._id)}
-                            >
-                              <DeleteIcon />
-                            </Pressable>
-                          )}
-                        </View>
-                        <Text className="text-light-text mb-2 mx-4 text-lg">
-                          <Text className="font-bold text-light-text">
-                            Hora de salida:{" "}
-                          </Text>
-                          {formatDate1(registro.timestamp_salida)}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : (
-                <Text className="text-white">No hay registros disponibles</Text>
-              )}
+              </View>
+            ) : null}
+          </>
+          {isSubmitting ? (
+            <View className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2">
+              <Text className="text-lg font-bold text-light-text">Enviando...</Text>
             </View>
           ) : (
-            ""
+            <Pressable
+              onPress={() => handleSubmit()}
+              className="p-3 mt-10 bg-light-success rounded items-center justify-center border-slate-800 border-2"
+            >
+              <Text className="text-lg font-bold text-white">Enviar Datos</Text>
+            </Pressable>
           )}
+        </View>
+      )}
 
-      </Screen>
+      {user?.sethora ? (
+        <View className="m-6">
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : getRegistros.length > 0 ? (
+            <View className="mt-6 p-4">
+              {getRegistros.map((registro) => {
+                const bus = busList.find(
+                  (bus) => bus._id === registro.id_unidad
+                );
+                return (
+                  <View
+                    className="m-4 p-4 bg-white rounded "
+                    key={registro._id}
+                  >
+                    <View className="flex flex-row justify-between">
+                      <Text className="text-light-text mb-2 mx-4 text-lg">
+                        <Text className="font-bold ">
+                          Control:{" "}
+                        </Text>
+                        {bus ? bus.numero : "N/A"}
+                      </Text>
+                      {user.setdelete && (
+                        <Pressable
+                          onPress={() => deleteRegistro(registro._id)}
+                        >
+                          <DeleteIcon />
+                        </Pressable>
+                      )}
+                    </View>
+                    <Text className="text-light-text mb-2 mx-4 text-lg">
+                      <Text className="font-bold text-light-text">
+                        Hora de salida:{" "}
+                      </Text>
+                      {formatDate1(registro.timestamp_salida)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text className="text-white">No hay registros disponibles</Text>
+          )}
+        </View>
+      ) : (
+        ""
+      )}
+
+    </Screen>
   );
 }
