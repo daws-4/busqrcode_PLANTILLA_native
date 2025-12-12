@@ -172,9 +172,12 @@ export function Main() {
     }
   };
   useEffect(() => {
-    requestBluetoothPermissions();
+    // Solo pedir permisos de Bluetooth si el fiscal tiene sethora habilitado
+    if (user?.sethora) {
+      requestBluetoothPermissions();
+    }
     fetchData();
-  }, []);
+  }, [user?.sethora]);
 
   // función para eliminar los registros de la base de datos
 
@@ -272,6 +275,15 @@ export function Main() {
 
       await checkBluetoothEnabled();
 
+      // Cancelar cualquier discovery previo que esté activo
+      try {
+        await RNBluetoothClassic.cancelDiscovery();
+        console.log('🛑 Discovery anterior cancelado');
+      } catch (error) {
+        // Si no hay discovery activo, ignorar el error
+        console.log('ℹ️ No había discovery activo para cancelar');
+      }
+
       const bondedDevices = await RNBluetoothClassic.getBondedDevices();
       console.log('📱 Dispositivos vinculados:', bondedDevices.length);
 
@@ -364,8 +376,11 @@ export function Main() {
 
             // Actualizar el contexto PCounter
             if (jsonData.conteo !== undefined) {
-              setPCounter(jsonData.conteo);
-              setBtStatusMessage("Datos de pasajeros recibidos correctamente");
+              // Defer state updates to avoid updating during render
+              setTimeout(() => {
+                setPCounter(jsonData.conteo);
+                setBtStatusMessage("Datos de pasajeros recibidos correctamente");
+              }, 0);
               console.log('✅ PCounter actualizado:', jsonData.conteo);
             }
           }
@@ -411,11 +426,28 @@ export function Main() {
 
   // Conexión automática cuando se carga busData
   useEffect(() => {
-    if (busData && busData.numero && busData._id) {
-      const deviceName = `Unidad_${busData.numero}`;
-      const key = busData._id;
-      scanAndConnectToDevice(deviceName, key);
-    }
+    const setupBluetoothConnection = async () => {
+      // Solo conectar Bluetooth si el fiscal tiene sethora habilitado
+      if (user?.sethora && busData && busData.numero && busData._id) {
+        // Desconectar dispositivo anterior si existe
+        if (selectedDevice && connected) {
+          console.log('🔌 Desconectando dispositivo anterior...');
+          await disconnectDevice();
+        }
+
+        const deviceName = `Unidad_${busData.numero}`;
+        const key = busData._id;
+        scanAndConnectToDevice(deviceName, key);
+      } else if (!user?.sethora && (selectedDevice || connected)) {
+        // Si sethora es false y hay una conexión activa, desconectarla
+        console.log('🔌 Desconectando Bluetooth (sethora deshabilitado)...');
+        await disconnectDevice();
+        setPCounter(null);
+        setBtStatusMessage("");
+      }
+    };
+
+    setupBluetoothConnection();
 
     // Cleanup al desmontar
     return () => {
@@ -423,7 +455,7 @@ export function Main() {
         disconnectDevice();
       }
     };
-  }, [busData]);
+  }, [busData?._id, user?.sethora]); // Solo reaccionar cuando cambie el _id del bus o sethora
 
   // ==================== END BLUETOOTH CLASSIC FUNCTIONS ====================
 
@@ -529,7 +561,7 @@ export function Main() {
             timestamp_telefono: utcDate,
             timestamp_salida: selectedTime,
             id_fiscal: user?._id || "",
-            passenger_count: pCounter,
+            passenger_count: null, // sethora es false, no hay contador
           };
 
           // Intentar enviar la petición
@@ -559,7 +591,6 @@ export function Main() {
           // }
         } finally {
           setIsSubmitting(false); // Establecer isSubmitting a false al final
-          fetchRegistros();
         }
       } else {
         alert("Debes seleccionar ruta y autobús");
@@ -588,7 +619,7 @@ export function Main() {
             timestamp_telefono: utcDate,
             timestamp_salida: selectedTime,
             id_fiscal: user?._id || "",
-            passenger_count: pCounter,
+            passenger_count: user?.sethora ? pCounter : null, // Solo enviar pCounter si sethora es true
           };
 
           // Intentar enviar la petición
@@ -617,7 +648,6 @@ export function Main() {
           // }
         } finally {
           setIsSubmitting(false); // Establecer isSubmitting a false al final
-          fetchRegistros();
         }
       } else {
         alert("Debes seleccionar ruta y autobús");
@@ -657,6 +687,11 @@ export function Main() {
       if (failedRequests.length === 0) {
         alert("Datos enviados correctamente");
         console.log("Todos los datos de la cola se enviaron correctamente");
+        // Actualizar registros después de enviar exitosamente a la BD
+        // Pequeño delay para asegurar que el servidor haya procesado la petición
+        setTimeout(async () => {
+          await fetchRegistros();
+        }, 500);
       }
     };
 
@@ -720,7 +755,7 @@ export function Main() {
             </Text>
           </View>
           <>
-            {btStatusMessage && (
+            {user?.sethora && btStatusMessage && (
               <View className={`m-3 p-3 rounded ${btStatusMessage.includes("correctamente")
                 ? "bg-green-100"
                 : "bg-red-100"
@@ -733,7 +768,7 @@ export function Main() {
                 </Text>
               </View>
             )}
-            {btLoading && (
+            {user?.sethora && btLoading && (
               <View className="m-3 p-3 rounded bg-blue-100">
                 <View className="flex-row items-center justify-center">
                   <ActivityIndicator size="small" color="#1e40af" />
@@ -764,10 +799,12 @@ export function Main() {
             {user?.sethora ? (
               <View>
                 <Pressable
-                  className="p-3 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2"
+                  className="p-4 mt-10 bg-light-secondary rounded items-center justify-center border-slate-800 border-2"
                   onPress={() => setShowTimePicker(true)}
                 >
-                  <Text className="text-lg font-bold">Hora de Salida</Text>
+                  <Text className="text-lg font-bold">
+                    Hora de Salida: {selectedRealTime ? formatDate1(selectedRealTime) : "Seleccionar"}
+                  </Text>
                 </Pressable>
                 {showTimePicker && (
                   <DateTimePicker
@@ -777,13 +814,6 @@ export function Main() {
                     onChange={onTimeChange}
                   />
                 )}
-
-                <View>
-                  <Text className="text-base">
-                    Hora seleccionada:{" "}
-                    {selectedRealTime ? formatDate1(selectedRealTime) : ""}{" "}
-                  </Text>
-                </View>
               </View>
             ) : null}
           </>

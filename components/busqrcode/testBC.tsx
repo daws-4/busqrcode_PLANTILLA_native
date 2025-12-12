@@ -1,4 +1,4 @@
-import { Screen } from "../../components/busqrcode/Screen";
+import { Screen } from "./Screen";
 import { useEffect, useState } from "react";
 import {
   PermissionsAndroid,

@@ -11,6 +11,8 @@
   "extends": "expo/tsconfig.base",
   "include": [
     "**/*.ts",
-    "**/*.tsx"
-, "components/BleExample.jsx", "app/(tabs)/testBC.tsx"  ]
+    "**/*.tsx",
+    "components/BleExample.jsx",
+    "components/busqrcode/testBC.tsx"
+  ]
 }
